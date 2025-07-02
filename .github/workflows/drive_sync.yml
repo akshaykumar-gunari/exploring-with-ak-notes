@@ -42,6 +42,9 @@ jobs:
       - name: Merge / Organize / Rename PDFs
         run: python scripts/upload_notes.py
 
+      - name: Clean up staging folder
+        run: rm -rf staging/*
+
       - name: Commit & Push changes
         run: |
           git config --global user.name github-actions[bot]
