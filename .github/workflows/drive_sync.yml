@@ -32,6 +32,9 @@ jobs:
       - name: Make staging folder
         run: mkdir -p staging
 
+      - name: Fetch new PDFs from Drive
+        run: python scripts/fetch_drive.py
+
       - name: Fetch PDFs from Google Drive
         run: python scripts/upload_notes.py
 
