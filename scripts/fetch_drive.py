@@ -55,7 +55,9 @@ def main():
             filename = file['name']
             modified_time = file['modifiedTime']
 
-            meta_file = os.path.join(META_PATH, f"{filename}.json")
+            # meta_file = os.path.join(META_PATH, f"{filename}.json")
+            base_name, _ = os.path.splitext(filename)
+            meta_file = os.path.join(META_PATH, f"{base_name}.json")
             if os.path.exists(meta_file):
                 with open(meta_file) as f:
                     meta = json.load(f)
