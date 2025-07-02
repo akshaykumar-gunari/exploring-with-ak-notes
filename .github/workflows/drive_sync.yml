@@ -29,6 +29,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Make staging folder
+        run: mkdir -p staging
+
       - name: Fetch PDFs from Google Drive
         run: python scripts/upload_notes.py
 
