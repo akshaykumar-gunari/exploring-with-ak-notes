@@ -1,5 +1,6 @@
 import os
 import re
+import shutil
 from PyPDF2 import PdfMerger
 
 REPO_PATH = "."
@@ -44,6 +45,10 @@ def main():
     for pdf in os.listdir(STAGING_PATH):
         if pdf.endswith('.pdf'):
             process_pdf(pdf)
+
+    # ✅ Delete all files after processing
+    shutil.rmtree(STAGING_PATH)
+    os.makedirs(STAGING_PATH, exist_ok=True)
 
 if __name__ == "__main__":
     main()
