@@ -30,7 +30,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Fetch PDFs from Google Drive
-        run: python scripts/fetch_drive.py
+        run: python .scripts/fetch_drive.py
 
       - name: Merge / Organize / Rename PDFs
         run: python scripts/upload_notes.py
