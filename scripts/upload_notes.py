@@ -5,6 +5,7 @@ from PyPDF2 import PdfMerger
 
 REPO_PATH = "."
 STAGING_PATH = "staging"
+MERGED_META_PATH = ".merged"   # 👈 all .merged files go here
 
 def merge_pdfs(pdfs, output_pdf):
     merger = PdfMerger()
@@ -31,10 +32,15 @@ def process_pdf(filename):
     part = part or "Part1"
     topic_file = f"{topic_file_base}.pdf"
 
+    # === Where to store final PDF ===
     target_dir = os.path.join(REPO_PATH, domain, subdomain, topic_folder)
     os.makedirs(target_dir, exist_ok=True)
 
-    merged_log = os.path.join(target_dir, f"{topic_file_base}.merged")
+    # === Where to store the .merged tracker ===
+    merged_dir = os.path.join(MERGED_META_PATH, domain, subdomain, topic_folder)
+    os.makedirs(merged_dir, exist_ok=True)
+    merged_log = os.path.join(merged_dir, f"{topic_file_base}.merged")
+
     already_merged = []
     if os.path.exists(merged_log):
         with open(merged_log) as f:
