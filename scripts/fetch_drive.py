@@ -7,7 +7,7 @@ from googleapiclient.http import MediaIoBaseDownload
 
 # === CONFIG ===
 STAGING_PATH = "staging"
-DRIVE_FOLDER_ID = "<YOUR_DRIVE_FOLDER_ID>"
+DRIVE_FOLDER_ID = "10RMT08oF-uU1Xk6cAYkvF6eyswC_Udp7"
 
 CLIENT_ID = os.environ["GDRIVE_CLIENT_ID"]
 CLIENT_SECRET = os.environ["GDRIVE_CLIENT_SECRET"]
