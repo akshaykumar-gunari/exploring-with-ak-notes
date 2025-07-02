@@ -21,6 +21,7 @@ def process_pdf(filename):
         return
 
     domain, subdomain, topic_folder, topic_file_with_part = parts
+
     match = re.match(r"(.*?)(Part\d+)?$", topic_file_with_part)
     if not match:
         print(f"Invalid topic file: {topic_file_with_part}")
@@ -33,9 +34,8 @@ def process_pdf(filename):
     target_dir = os.path.join(REPO_PATH, domain, subdomain, topic_folder)
     os.makedirs(target_dir, exist_ok=True)
 
-    merged_log = os.path.join(target_dir, ".merged")
+    merged_log = os.path.join(target_dir, f"{topic_file_base}.merged")
     already_merged = []
-
     if os.path.exists(merged_log):
         with open(merged_log) as f:
             already_merged = [line.strip() for line in f.readlines()]
@@ -55,16 +55,16 @@ def process_pdf(filename):
     with open(merged_log, "a") as f:
         f.write(part + "\n")
 
+    print(f"✅ Merged {filename} → {topic_file}")
 
 def main():
     for pdf in os.listdir(STAGING_PATH):
         if pdf.endswith('.pdf'):
             process_pdf(pdf)
 
-    # ✅ Delete all files after processing
+    # ✅ Clear staging for next run
     shutil.rmtree(STAGING_PATH)
     os.makedirs(STAGING_PATH, exist_ok=True)
 
 if __name__ == "__main__":
     main()
-

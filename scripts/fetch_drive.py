@@ -1,12 +1,13 @@
 import os
 import io
+import json
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 
-# === CONFIG ===
 STAGING_PATH = "staging"
+META_PATH = "meta"
 DRIVE_FOLDER_ID = "10RMT08oF-uU1Xk6cAYkvF6eyswC_Udp7"
 
 CLIENT_ID = os.environ["GDRIVE_CLIENT_ID"]
@@ -38,21 +39,35 @@ def download_file(service, file_id, filename):
 
 def main():
     os.makedirs(STAGING_PATH, exist_ok=True)
+    os.makedirs(META_PATH, exist_ok=True)
 
     service = get_drive_service()
 
-    # List files in your folder
     query = f"'{DRIVE_FOLDER_ID}' in parents and mimeType='application/pdf'"
-    results = service.files().list(q=query, fields="files(id, name)").execute()
+    results = service.files().list(q=query, fields="files(id, name, modifiedTime)").execute()
     files = results.get('files', [])
 
     if not files:
         print("No PDF files found in Drive folder.")
     else:
         for file in files:
-            print(f"Downloading: {file['name']}")
-            download_file(service, file['id'], file['name'])
+            file_id = file['id']
+            filename = file['name']
+            modified_time = file['modifiedTime']
+
+            meta_file = os.path.join(META_PATH, f"{filename}.json")
+            if os.path.exists(meta_file):
+                with open(meta_file) as f:
+                    meta = json.load(f)
+                if meta.get("modifiedTime") == modified_time:
+                    print(f"✅ Skipping unchanged: {filename}")
+                    continue
+
+            print(f"⬇️ Downloading new or updated: {filename}")
+            download_file(service, file_id, filename)
+
+            with open(meta_file, "w") as f:
+                json.dump({"modifiedTime": modified_time}, f)
 
 if __name__ == "__main__":
     main()
-
