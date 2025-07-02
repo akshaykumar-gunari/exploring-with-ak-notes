@@ -21,8 +21,6 @@ This repository is my organized knowledge base for daily learnings and handwritt
   - Scripts
 - **DevOps**
   - Docker / Kubernetes / CI-CD
-- **Networking**
-  - Protocols / SDN / Security
 - **Mathematics**
   - Linear Algebra / Probability / Calculus
 - **Misc**
