@@ -1,0 +1,19 @@
+# === Python junk ===
+__pycache__/
+*.pyc
+
+# === Virtual environments ===
+venv/
+.env/
+
+# === Folders used by your Drive sync system ===
+staging/
+meta/
+.merged/
+
+# === Secrets ===
+service_account.json
+
+# === OS files ===
+.DS_Store
+Thumbs.db

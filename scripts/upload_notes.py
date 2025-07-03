@@ -5,7 +5,7 @@ from PyPDF2 import PdfMerger
 
 REPO_PATH = "."
 STAGING_PATH = "staging"
-MERGED_META_PATH = ".merged"   # 👈 all .merged files go here
+MERGED_PATH = ".merged"
 
 def merge_pdfs(pdfs, output_pdf):
     merger = PdfMerger()
@@ -18,59 +18,60 @@ def process_pdf(filename):
     name, ext = os.path.splitext(filename)
     parts = name.split('-')
     if len(parts) != 4:
-        print(f"Invalid filename: {filename}")
+        print(f"❌ Invalid filename: {filename}")
         return
 
     domain, subdomain, topic_folder, topic_file_with_part = parts
 
     match = re.match(r"(.*?)(Part\d+)?$", topic_file_with_part)
     if not match:
-        print(f"Invalid topic file: {topic_file_with_part}")
+        print(f"❌ Invalid topic file: {topic_file_with_part}")
         return
 
     topic_file_base, part = match.groups()
-    part = part or "Part1"
     topic_file = f"{topic_file_base}.pdf"
 
-    # === Where to store final PDF ===
     target_dir = os.path.join(REPO_PATH, domain, subdomain, topic_folder)
     os.makedirs(target_dir, exist_ok=True)
-
-    # === Where to store the .merged tracker ===
-    merged_dir = os.path.join(MERGED_META_PATH, domain, subdomain, topic_folder)
-    os.makedirs(merged_dir, exist_ok=True)
-    merged_log = os.path.join(merged_dir, f"{topic_file_base}.merged")
-
-    already_merged = []
-    if os.path.exists(merged_log):
-        with open(merged_log) as f:
-            already_merged = [line.strip() for line in f.readlines()]
-
-    if part in already_merged:
-        print(f"✅ Skipping {filename} (already merged)")
-        return
+    os.makedirs(MERGED_PATH, exist_ok=True)
 
     target_pdf = os.path.join(target_dir, topic_file)
-    new_pdf = os.path.join(STAGING_PATH, filename)
+    staged_pdf = os.path.join(STAGING_PATH, filename)
 
-    if os.path.exists(target_pdf):
-        merge_pdfs([target_pdf, new_pdf], target_pdf)
+    # Merged version to check for changes
+    merged_marker = os.path.join(MERGED_PATH, topic_file)
+
+    # If the final PDF does not exist yet:
+    if not os.path.exists(target_pdf):
+        print(f"🆕 Creating new: {target_pdf}")
+        merge_pdfs([staged_pdf], target_pdf)
+        shutil.copy2(target_pdf, merged_marker)
     else:
-        merge_pdfs([new_pdf], target_pdf)
+        # Compare with merged marker to detect real change
+        if not os.path.exists(merged_marker):
+            shutil.copy2(target_pdf, merged_marker)
 
-    with open(merged_log, "a") as f:
-        f.write(part + "\n")
+        print(f"🔍 Checking for new content...")
+        temp_merged = f"{merged_marker}.tmp.pdf"
+        merge_pdfs([merged_marker, staged_pdf], temp_merged)
 
-    print(f"✅ Merged {filename} → {topic_file}")
+        if open(temp_merged, 'rb').read() == open(merged_marker, 'rb').read():
+            print(f"✅ No new changes. Skipping: {filename}")
+            os.remove(temp_merged)
+        else:
+            print(f"✅ Appending new content to: {target_pdf}")
+            shutil.copy2(temp_merged, target_pdf)
+            shutil.copy2(temp_merged, merged_marker)
+            os.remove(temp_merged)
+
+    # Clean up staged file
+    os.remove(staged_pdf)
+    print(f"🗑️ Removed staged: {filename}")
 
 def main():
     for pdf in os.listdir(STAGING_PATH):
         if pdf.endswith('.pdf'):
             process_pdf(pdf)
-
-    # ✅ Clear staging for next run
-    shutil.rmtree(STAGING_PATH)
-    os.makedirs(STAGING_PATH, exist_ok=True)
 
 if __name__ == "__main__":
     main()
