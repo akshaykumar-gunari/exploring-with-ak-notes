@@ -9,7 +9,6 @@ venv/
 # === Folders used by your Drive sync system ===
 staging/
 meta/
-.merged/
 
 # === Secrets ===
 service_account.json
