@@ -1,15 +1,23 @@
 import os
 import re
-import shutil
+import json
+import hashlib
 from PyPDF2 import PdfMerger
 
 REPO_PATH = "."
 STAGING_PATH = "staging"
-MERGED_PATH = ".merged"
+MERGED_META = ".merged"
 
-def merge_pdfs(pdfs, output_pdf):
+def md5sum(file_path):
+    hash_md5 = hashlib.md5()
+    with open(file_path, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+
+def merge_pdfs(pdf_list, output_pdf):
     merger = PdfMerger()
-    for pdf in pdfs:
+    for pdf in pdf_list:
         merger.append(pdf)
     merger.write(output_pdf)
     merger.close()
@@ -17,56 +25,46 @@ def merge_pdfs(pdfs, output_pdf):
 def process_pdf(filename):
     name, ext = os.path.splitext(filename)
     parts = name.split('-')
-    if len(parts) != 4:
-        print(f"❌ Invalid filename: {filename}")
+    if len(parts) != 2:
+        print(f"Invalid filename: {filename}")
         return
 
-    domain, subdomain, topic_folder, topic_file_with_part = parts
-
-    match = re.match(r"(.*?)(Part\d+)?$", topic_file_with_part)
+    # testpart4 → test, part4
+    match = re.match(r"(.*?)(part\d+)$", parts[1], re.IGNORECASE)
     if not match:
-        print(f"❌ Invalid topic file: {topic_file_with_part}")
+        print(f"Invalid part naming: {parts[1]}")
         return
 
-    topic_file_base, part = match.groups()
-    topic_file = f"{topic_file_base}.pdf"
+    base_name = parts[0]  # test
+    topic_name = match.group(1) if match.group(1) else base_name
+    target_pdf = os.path.join(REPO_PATH, f"{base_name}.pdf")
+    meta_file = os.path.join(MERGED_META, f"{base_name}.json")
+    new_pdf = os.path.join(STAGING_PATH, filename)
 
-    target_dir = os.path.join(REPO_PATH, domain, subdomain, topic_folder)
-    os.makedirs(target_dir, exist_ok=True)
-    os.makedirs(MERGED_PATH, exist_ok=True)
+    os.makedirs(MERGED_META, exist_ok=True)
 
-    target_pdf = os.path.join(target_dir, topic_file)
-    staged_pdf = os.path.join(STAGING_PATH, filename)
+    new_hash = md5sum(new_pdf)
 
-    # Merged version to check for changes
-    merged_marker = os.path.join(MERGED_PATH, topic_file)
-
-    # If the final PDF does not exist yet:
-    if not os.path.exists(target_pdf):
-        print(f"🆕 Creating new: {target_pdf}")
-        merge_pdfs([staged_pdf], target_pdf)
-        shutil.copy2(target_pdf, merged_marker)
+    if os.path.exists(meta_file):
+        with open(meta_file) as f:
+            meta = json.load(f)
     else:
-        # Compare with merged marker to detect real change
-        if not os.path.exists(merged_marker):
-            shutil.copy2(target_pdf, merged_marker)
+        meta = {"merged_hashes": []}
 
-        print(f"🔍 Checking for new content...")
-        temp_merged = f"{merged_marker}.tmp.pdf"
-        merge_pdfs([merged_marker, staged_pdf], temp_merged)
+    if new_hash in meta["merged_hashes"]:
+        print(f"Already merged: {filename}")
+        return
 
-        if open(temp_merged, 'rb').read() == open(merged_marker, 'rb').read():
-            print(f"✅ No new changes. Skipping: {filename}")
-            os.remove(temp_merged)
-        else:
-            print(f"✅ Appending new content to: {target_pdf}")
-            shutil.copy2(temp_merged, target_pdf)
-            shutil.copy2(temp_merged, merged_marker)
-            os.remove(temp_merged)
+    if os.path.exists(target_pdf):
+        merge_pdfs([target_pdf, new_pdf], target_pdf)
+    else:
+        merge_pdfs([new_pdf], target_pdf)
 
-    # Clean up staged file
-    os.remove(staged_pdf)
-    print(f"🗑️ Removed staged: {filename}")
+    meta["merged_hashes"].append(new_hash)
+    with open(meta_file, 'w') as f:
+        json.dump(meta, f, indent=2)
+
+    print(f"Merged: {filename}")
 
 def main():
     for pdf in os.listdir(STAGING_PATH):
