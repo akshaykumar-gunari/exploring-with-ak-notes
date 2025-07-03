@@ -25,20 +25,29 @@ def merge_pdfs(pdf_list, output_pdf):
 def process_pdf(filename):
     name, ext = os.path.splitext(filename)
     parts = name.split('-')
-    if len(parts) != 2:
+    if len(parts) < 4:
         print(f"Invalid filename: {filename}")
         return
 
-    # testpart4 → test, part4
-    match = re.match(r"(.*?)(part\d+)$", parts[1], re.IGNORECASE)
+    domain = parts[0]
+    subdomain = parts[1]
+    topic_folder = parts[2]
+    topic_file_with_part = '-'.join(parts[3:])  # join rest
+
+    print(f"DEBUG: domain={domain}, subdomain={subdomain}, topic_folder={topic_folder}, topic_file_with_part={topic_file_with_part}")
+
+    match = re.match(r"(.*?)(Part\d+)?$", topic_file_with_part)
     if not match:
-        print(f"Invalid part naming: {parts[1]}")
+        print(f"Invalid topic file: {topic_file_with_part}")
         return
 
-    base_name = parts[0]  # test
-    topic_name = match.group(1) if match.group(1) else base_name
-    target_pdf = os.path.join(REPO_PATH, f"{base_name}.pdf")
-    meta_file = os.path.join(MERGED_META, f"{base_name}.json")
+    topic_file_base, part = match.groups()
+    topic_file = f"{topic_file_base}.pdf"
+
+    target_dir = os.path.join(REPO_PATH, domain, subdomain, topic_folder)
+    os.makedirs(target_dir, exist_ok=True)
+
+    target_pdf = os.path.join(target_dir, topic_file)
     new_pdf = os.path.join(STAGING_PATH, filename)
 
     os.makedirs(MERGED_META, exist_ok=True)
