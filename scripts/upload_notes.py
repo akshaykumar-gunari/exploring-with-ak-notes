@@ -6,7 +6,7 @@ from PyPDF2 import PdfMerger
 
 REPO_PATH = "."
 STAGING_PATH = "staging"
-MERGED_META = ".merged"
+MERGED_META_DIR = ".merged"
 
 def md5sum(file_path):
     hash_md5 = hashlib.md5()
