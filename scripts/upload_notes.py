@@ -32,9 +32,7 @@ def process_pdf(filename):
     domain = parts[0]
     subdomain = parts[1]
     topic_folder = parts[2]
-    topic_file_with_part = '-'.join(parts[3:])  # join rest
-
-    print(f"DEBUG: domain={domain}, subdomain={subdomain}, topic_folder={topic_folder}, topic_file_with_part={topic_file_with_part}")
+    topic_file_with_part = '-'.join(parts[3:])
 
     match = re.match(r"(.*?)(Part\d+)?$", topic_file_with_part)
     if not match:
@@ -47,33 +45,36 @@ def process_pdf(filename):
     target_dir = os.path.join(REPO_PATH, domain, subdomain, topic_folder)
     os.makedirs(target_dir, exist_ok=True)
 
-    target_pdf = os.path.join(target_dir, topic_file)
-    new_pdf = os.path.join(STAGING_PATH, filename)
+    os.makedirs(MERGED_META_DIR, exist_ok=True)
+    meta_file = os.path.join(MERGED_META_DIR, f"{topic_file_base}.json")
 
-    os.makedirs(MERGED_META, exist_ok=True)
+    new_pdf_path = os.path.join(STAGING_PATH, filename)
+    new_md5 = md5sum(new_pdf_path)
 
-    new_hash = md5sum(new_pdf)
-
+    # Load previous meta
     if os.path.exists(meta_file):
         with open(meta_file) as f:
-            meta = json.load(f)
+            merged_meta = json.load(f)
     else:
-        meta = {"merged_hashes": []}
+        merged_meta = {"merged_parts": []}
 
-    if new_hash in meta["merged_hashes"]:
+    if new_md5 in merged_meta["merged_parts"]:
         print(f"Already merged: {filename}")
         return
 
-    if os.path.exists(target_pdf):
-        merge_pdfs([target_pdf, new_pdf], target_pdf)
-    else:
-        merge_pdfs([new_pdf], target_pdf)
+    target_pdf = os.path.join(target_dir, topic_file)
 
-    meta["merged_hashes"].append(new_hash)
+    if os.path.exists(target_pdf):
+        merge_pdfs([target_pdf, new_pdf_path], target_pdf)
+    else:
+        merge_pdfs([new_pdf_path], target_pdf)
+
+    merged_meta["merged_parts"].append(new_md5)
     with open(meta_file, 'w') as f:
-        json.dump(meta, f, indent=2)
+        json.dump(merged_meta, f)
 
     print(f"Merged: {filename}")
+
 
 def main():
     for pdf in os.listdir(STAGING_PATH):
