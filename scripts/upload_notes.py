@@ -45,8 +45,10 @@ def process_pdf(filename):
     target_dir = os.path.join(REPO_PATH, domain, subdomain, topic_folder)
     os.makedirs(target_dir, exist_ok=True)
 
-    os.makedirs(MERGED_META_DIR, exist_ok=True)
-    meta_file = os.path.join(MERGED_META_DIR, f"{topic_file_base}.json")
+    merged_dir = os.path.join(MERGED_META_DIR, domain, subdomain, topic_folder)
+    os.makedirs(merged_dir, exist_ok=True)
+
+    meta_file = os.path.join(merged_dir, f"{topic_file_base}.json")
 
     new_pdf_path = os.path.join(STAGING_PATH, filename)
     new_md5 = md5sum(new_pdf_path)
